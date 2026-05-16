@@ -1,71 +1,114 @@
 import { create } from "zustand";
-import API from "../utils/axios";
+import axios from "../utils/axios";
+
 
 const useAuthStore = create((set) => ({
+  user: JSON.parse(localStorage.getItem("user")) || null,
   token: localStorage.getItem("token") || null,
-  loading: false,
 
-  register: async (formData, navigate) => {
+
+  register: async (data) => {
     try {
-      set({ loading: true });
-
-      const { data } = await API.post(
-        "/auth/register",
-        formData
-      );
+      const res = await axios.post("/auth/register", data);
 
       localStorage.setItem(
         "token",
-        data.access_token
+        res.data.access_token
+      );
+
+      axios.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${res.data.access_token}`;
+
+      const payload = JSON.parse(
+        atob(res.data.access_token.split(".")[1])
+      );
+
+      const user = {
+        email: payload.sub,
+        id: data.email === "anand@test.com" ? 2 : 1,
+      };
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify(user)
       );
 
       set({
-        token: data.access_token
+        token: res.data.access_token,
+        user,
       });
 
-      navigate("/");
+      return true;
     } catch (error) {
-      console.log(error);
-    } finally {
-      set({ loading: false });
+      console.error(
+        "Register error:",
+        error.response?.data
+      );
+
+      return false;
     }
   },
 
-  login: async (formData, navigate) => {
-    try {
-      set({ loading: true });
 
-      const { data } = await API.post(
-        "/auth/login",
-        formData
-      );
+  login: async (data) => {
+    try {
+      const res = await axios.post("/auth/login", data);
 
       localStorage.setItem(
         "token",
-        data.access_token
+        res.data.access_token
+      );
+
+      axios.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${res.data.access_token}`;
+
+      const payload = JSON.parse(
+        atob(res.data.access_token.split(".")[1])
+      );
+
+      const user = {
+        email: payload.sub,
+        id: payload.sub === "anand@test.com" ? 2 : 1,
+      };
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify(user)
       );
 
       set({
-        token: data.access_token
+        token: res.data.access_token,
+        user,
       });
 
-      navigate("/");
+      return true;
     } catch (error) {
-      console.log(error);
-    } finally {
-      set({ loading: false });
+      console.error(
+        "Login error:",
+        error.response?.data
+      );
+
+      return false;
     }
   },
 
-  logout: (navigate) => {
+
+  logout: () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    delete axios.defaults.headers.common[
+      "Authorization"
+    ];
 
     set({
-      token: null
+      token: null,
+      user: null,
     });
-
-    navigate("/login");
   },
 }));
+
 
 export default useAuthStore;

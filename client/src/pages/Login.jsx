@@ -12,10 +12,24 @@ function Login() {
     password: "",
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    login(formData, navigate);
-  };
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  alert("Login button clicked");
+
+  console.log("Form Data:", formData);
+
+  const success = await login(formData);
+
+  console.log("Login result:", success);
+
+  if (success) {
+    alert("Login successful");
+    navigate("/");
+  } else {
+    alert("Invalid credentials or backend issue");
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-primary px-4">

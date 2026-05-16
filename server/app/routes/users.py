@@ -1,6 +1,11 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+
+from app.config.database import get_db
 from app.models.user import User
 from app.utils.dependencies import get_current_user
+from app.schemas.user import UserResponse
 
 router = APIRouter(
     prefix="/users",
@@ -8,14 +13,18 @@ router = APIRouter(
 )
 
 
-@router.get("/me")
-def get_me(
+@router.get(
+    "/all",
+    response_model=list[UserResponse]
+)
+
+
+def get_all_users(
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return {
-        "id": current_user.id,
-        "full_name": current_user.full_name,
-        "email": current_user.email,
-        "profile_pic": current_user.profile_pic,
-        "created_at": current_user.created_at
-    }
+    users = db.query(User).filter(
+        User.id != current_user.id
+    ).all()
+
+    return users
